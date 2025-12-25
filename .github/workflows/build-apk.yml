@@ -73,10 +73,10 @@ jobs:
         export ANDROID_SDK_ROOT=$ANDROID_HOME
         mkdir -p $ANDROID_HOME
         
-        # 下载并安装 Android Command Line Tools
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip -q commandlinetools-linux-9477386_latest.zip -d $ANDROID_HOME
-        rm commandlinetools-linux-9477386_latest.zip
+        # 下载并安装 Android Command Line Tools（最新版本）
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip -d $ANDROID_HOME
+        rm commandlinetools-linux-11076708_latest.zip
         
         # 创建正确的目录结构
         mkdir -p $ANDROID_HOME/cmdline-tools/latest
@@ -104,18 +104,11 @@ jobs:
         export ANDROID_SDK_ROOT=$ANDROID_HOME
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
-        # 初始化python-for-android
-        echo "初始化python-for-android..."
-        python -c "import pythonforandroid; print('python-for-android可用')" 2>/dev/null || (
-          echo "安装python-for-android..."
-          pip install python-for-android
-        )
+        # 验证SDK安装
+        echo "验证Android SDK安装..."
+        sdkmanager --list 2>/dev/null && echo "✓ SDK manager可用" || echo "✗ SDK manager不可用"
         
-        # 首先运行buildozer初始化以确保所有依赖都正确设置
-        echo "运行buildozer初始化..."
-        buildozer android update 2>/dev/null || echo "buildozer update完成"
-        
-        # 清理并构建
+        # 直接构建，让buildozer使用我们安装的SDK
         echo "开始构建APK..."
         buildozer -v android debug
         
