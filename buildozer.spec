@@ -21,9 +21,9 @@ android.minapi = 21
 android.ndk = 25b
 
 # SDK和NDK路径配置（避免自动下载）
-android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
-android.ant_path = /home/runner/.buildozer/android/platform/apache-ant-1.9.4
+android.sdk_path = %(buildozer_dir)s/android/platform/android-sdk
+android.ndk_path = %(buildozer_dir)s/android/platform/android-ndk-r25b
+android.ant_path = %(buildozer_dir)s/android/platform/apache-ant-1.9.4
 
 # 权限要求（简化权限要求）
 android.permissions = INTERNET,VIBRATE
