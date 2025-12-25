@@ -1,136 +1,172 @@
-[app]
+name: 德州扑克 Android APK 构建
 
-# 应用标题
-title = 德州扑克3
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**/*.md'
+      - '**/.gitignore'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
 
-# 包名（必须唯一）
-package.name = texasholdem3
-
-# 域名（反转的包名）
-package.domain = org.poker
-
-# 源代码目录
-source.dir = .
-
-# 主程序文件
-source.main = main.py
-
-# 支持的安卓版本
-android.api = 33
-android.minapi = 21
-android.ndk = 25b
-
-# SDK和NDK路径配置（避免自动下载）
-android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
-android.ant_path = /home/runner/.buildozer/android/platform/apache-ant-1.9.4
-
-# 权限要求（简化权限要求）
-android.permissions = INTERNET,VIBRATE
-
-# 屏幕方向（竖屏优化）
-orientation = portrait
-
-# 全屏模式
-fullscreen = 1
-
-# 包含的模块
-requirements = python3,kivy==2.2.1,openssl,requests,pyjnius
-
-# 排除不必要的模块以减少包大小
-android.blacklist_src = libgeos,libproj,libxml2,libxslt
-
-# 优化性能设置
-android.allow_backup = false
-android.launch_mode = singleTop
-
-# 包含的文件模式
-include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf,json
-
-# 排除的文件模式
-exclude_exts = .pyc,.pyo,.git,.gitignore,.DS_Store
-
-# 图标文件
-icon.filename = %(source.dir)s/assets/icon.png
-
-# 启动画面
-presplash.filename = %(source.dir)s/assets/splash.png
-
-# 资源文件配置
-source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf,json
-source.include_patterns = assets/*,images/*,data/*
-
-# 应用版本
-version = 3.0.0
-
-# 版本代码（必须递增）
-version.code = 1
-
-# 作者信息
-author = Poker Developer
-
-# 应用描述
-description = 德州扑克3 - 专业手游版，基于Kivy框架的移动端优化版本
-
-# 日志级别
-log_level = 2
-
-# 构建配置
-[buildozer]
-
-# 日志级别
-log_level = 2
-
-# 工作目录
-warn_on_root = 1
-
-# Android配置
-[app:android]
-
-# 包含的架构（支持更多设备）
-android.arch = armeabi-v7a,arm64-v8a
-
-# 应用类别
-android.meta_data = 
-
-# 活动主题
-android.theme = @android:style/Theme.NoTitleBar.Fullscreen
-
-# 触摸优化
-android.touchscreen_type = finger
-
-# 屏幕尺寸支持
-android.screen_size = normal,large,xlarge
-
-# 屏幕密度支持
-android.screen_density = mdpi,hdpi,xhdpi,xxhdpi
-
-# 活动配置
-android.entrypoint = org.poker.texasholdem3
-
-# 应用类别（游戏）
-android.app_category = game
-
-# 支持多窗口模式
-android.multiwindow_mode = none
-
-# iOS配置（如果需要）
-[app:ios]
-
-# iOS版本要求
-ios.deployment_target = 11.0
-
-# iOS包标识符
-ios.bundle_identifier = org.poker.texasholdem3
-
-# 其他平台配置
-[app:demo]
-
-# 图形后端
-[app:demo:graphics]
-
-# 窗口设置
-[app:demo:window]
-
-# 输入设置
-[app:demo:input]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置缓存
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.buildozer
+          ~/.gradle/caches
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+    
+    - name: 设置 Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: 安装系统依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-11-jdk wget ant
+        
+    - name: 接受 Android SDK 许可证
+      run: |
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        # 自动接受所有Android SDK许可证
+        yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
+        
+    - name: 安装 Buildozer 依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer cython virtualenv
+        
+    - name: 检查 Buildozer 配置
+      run: |
+        if [ -f "buildozer.spec" ]; then
+          echo "✓ buildozer.spec文件已存在"
+          # 验证spec文件格式
+          if python -c "import configparser; configparser.ConfigParser().read('buildozer.spec')" 2>/dev/null; then
+            echo "✓ buildozer.spec文件格式正确"
+          else
+            echo "✗ buildozer.spec文件格式错误，重新初始化"
+            buildozer init
+          fi
+        else
+          echo "✗ buildozer.spec文件不存在，正在初始化"
+          buildozer init
+        fi
+        
+    - name: 预先下载构建依赖
+      run: |
+        # 预先下载Apache Ant避免网络问题
+        mkdir -p $HOME/.buildozer/android/platform
+        cd $HOME/.buildozer/android/platform
+        
+        # 使用多个镜像源下载Apache Ant
+        wget -q --timeout=30 https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        wget -q --timeout=30 https://mirrors.tuna.tsinghua.edu.cn/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        wget -q --timeout=30 https://mirrors.aliyun.com/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        echo "无法下载Apache Ant，将使用系统版本"
+        
+        if [ -f "apache-ant-1.9.4-bin.tar.gz" ]; then
+          tar xzf apache-ant-1.9.4-bin.tar.gz
+          echo "Apache Ant下载完成"
+        fi
+        
+    - name: 安装 Android SDK 和构建工具
+      run: |
+        # 设置环境变量
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        mkdir -p $ANDROID_HOME
+        
+        # 下载并安装 Android Command Line Tools（最新版本）
+        wget -q --timeout=60 https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip -d $ANDROID_HOME
+        rm commandlinetools-linux-11076708_latest.zip
+        
+        # 创建正确的目录结构
+        mkdir -p $ANDROID_HOME/cmdline-tools/latest
+        mv $ANDROID_HOME/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/ 2>/dev/null || true
+        
+        # 设置PATH
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+        
+        # 安装必要的Android组件
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "build-tools;33.0.0"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "ndk;25.1.8937393"
+        
+        # 安装python-for-android
+        echo "安装python-for-android..."
+        pip install python-for-android
+        
+        echo "Android SDK和构建工具安装完成"
+        
+    - name: 构建 APK
+      run: |
+        # 设置环境变量
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+        
+        # 验证SDK安装
+        echo "验证Android SDK安装..."
+        sdkmanager --list 2>/dev/null && echo "✓ SDK manager可用" || echo "✗ SDK manager不可用"
+        
+        # 直接构建，让buildozer使用我们安装的SDK
+        echo "开始构建APK..."
+        buildozer -v android debug
+        
+        # 检查生成的APK文件
+        if ls bin/*.apk 1> /dev/null 2>&1; then
+          echo "✓ APK构建成功"
+          ls -la bin/
+          echo "APK文件: $(ls bin/*.apk)"
+        else
+          echo "✗ APK构建失败，未找到APK文件"
+          echo "检查构建目录..."
+          find .buildozer -name "*.apk" -type f 2>/dev/null || echo "未找到任何APK文件"
+          exit 1
+        fi
+        
+    - name: 上传 APK 制品
+      uses: actions/upload-artifact@v4
+      with:
+        name: texaspoker-apk
+        path: bin/*.apk
+        retention-days: 30
+        
+    - name: 创建 GitHub Release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/*.apk
+        tag_name: v$(date +%Y%m%d-%H%M%S)
+        name: "德州扑克 APK $(date +'%Y-%m-%d %H:%M:%S')"
+        body: |
+          # 德州扑克 Android APK 自动构建
+          
+          **构建信息:**
+          - 🔄 提交: ${{ github.sha }}
+          - ⏰ 构建时间: $(date)
+          - 🏷️ 版本: 自动构建版本
+          - 📱 目标平台: Android 12+ (API 33)
+          
+          **下载链接:**
+          - APK文件位于下方的Assets区域
+          
+          **构建详情:** [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
