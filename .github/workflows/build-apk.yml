@@ -91,7 +91,11 @@ jobs:
         yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools"
         yes | sdkmanager --sdk_root=$ANDROID_HOME "ndk;25.1.8937393"
         
-        echo "Android SDK安装完成"
+        # 安装python-for-android
+        echo "安装python-for-android..."
+        pip install python-for-android
+        
+        echo "Android SDK和构建工具安装完成"
         
     - name: 构建 APK
       run: |
@@ -100,16 +104,30 @@ jobs:
         export ANDROID_SDK_ROOT=$ANDROID_HOME
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
+        # 初始化python-for-android
+        echo "初始化python-for-android..."
+        python -c "import pythonforandroid; print('python-for-android可用')" 2>/dev/null || (
+          echo "安装python-for-android..."
+          pip install python-for-android
+        )
+        
+        # 首先运行buildozer初始化以确保所有依赖都正确设置
+        echo "运行buildozer初始化..."
+        buildozer android update 2>/dev/null || echo "buildozer update完成"
+        
         # 清理并构建
-        buildozer android clean
+        echo "开始构建APK..."
         buildozer -v android debug
         
         # 检查生成的APK文件
-        if [ -f "bin/*.apk" ]; then
+        if ls bin/*.apk 1> /dev/null 2>&1; then
           echo "✓ APK构建成功"
           ls -la bin/
+          echo "APK文件: $(ls bin/*.apk)"
         else
-          echo "✗ APK构建失败"
+          echo "✗ APK构建失败，未找到APK文件"
+          echo "检查构建目录..."
+          find .buildozer -name "*.apk" -type f 2>/dev/null || echo "未找到任何APK文件"
           exit 1
         fi
         
