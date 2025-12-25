@@ -3,7 +3,9 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   build:
@@ -21,22 +23,71 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y git zip unzip openjdk-11-jdk
+        sudo apt-get install -y git zip unzip openjdk-11-jdk wget
         
-    - name: Install Buildozer
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p ~/.android
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.android/licenses/android-sdk-license
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" >> ~/.android/licenses/android-sdk-license
+        
+    - name: Install Buildozer dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install buildozer cython
+        pip install buildozer cython virtualenv
+        
+    - name: Initialize Buildozer
+      run: |
+        buildozer init
+        
+    - name: Install Android SDK and Build Tools
+      run: |
+        # 手动安装Android SDK和Build Tools
+        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+        mkdir -p $ANDROID_SDK_ROOT
+        
+        # 下载并安装Android Command Line Tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip -q commandlinetools-linux-9477386_latest.zip -d $ANDROID_SDK_ROOT
+        rm commandlinetools-linux-9477386_latest.zip
+        
+        # 设置命令行工具路径
+        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/bin
+        
+        # 安装Android SDK和Build Tools
+        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-33"
+        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.0"
+        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools"
         
     - name: Build APK
       run: |
+        # 设置环境变量接受所有许可
+        yes | buildozer android clean
         buildozer -v android debug
         
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: texaspoker-apk
+        path: bin/*.apk
+        retention-days: 30
+        
     - name: Create Release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v1
       with:
         files: bin/*.apk
         tag_name: v$(date +%s)
-        name: "德州扑克4 APK $(date +'%Y-%m-%d')"
+        name: "德州扑克4 APK $(date +'%Y-%m-%d %H:%M')"
+        body: |
+          德州扑克4 Android APK自动构建
+          
+          - 提交: ${{ github.sha }}
+          - 构建时间: $(date)
+          - 版本: 3.0.0
+          
+          构建详情: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
