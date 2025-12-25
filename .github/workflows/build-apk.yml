@@ -125,15 +125,18 @@ jobs:
         echo "验证Android SDK安装..."
         sdkmanager --list 2>/dev/null && echo "✓ SDK manager可用" || echo "✗ SDK manager不可用"
         
-        # 设置buildozer使用正确的SDK路径
+        # 设置buildozer配置
         echo "设置buildozer配置..."
         
         # 检查并更新buildozer.spec中的SDK路径
         if [ -f "buildozer.spec" ]; then
-          # 确保buildozer使用我们安装的SDK而不是下载新的
-          sed -i 's|^android.sdk_path =.*|android.sdk_path = $ANDROID_HOME|' buildozer.spec 2>/dev/null || true
-          sed -i 's|^android.ndk_path =.*|android.ndk_path = $ANDROID_HOME/../android-ndk-r25b|' buildozer.spec 2>/dev/null || true
+          # 使用正确的路径变量替换
+          sed -i "s|%(buildozer_dir)s|$HOME/.buildozer|g" buildozer.spec
+          echo "更新buildozer.spec路径配置"
         fi
+        
+        # 强制buildozer使用我们安装的工具
+        echo "强制使用已安装的Android工具..."
         
         # 直接构建，让buildozer使用我们安装的SDK
         echo "开始构建APK..."
