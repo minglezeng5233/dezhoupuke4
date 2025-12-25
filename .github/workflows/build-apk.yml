@@ -1,8 +1,11 @@
-name: Build Android APK
+name: 德州扑克 Android APK 构建
 
 on:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - '**/*.md'
+      - '**/.gitignore'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:  # 允许手动触发
@@ -12,82 +15,130 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: 检出代码
       uses: actions/checkout@v4
       
-    - name: Set up Python 3.11
+    - name: 设置缓存
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.buildozer
+          ~/.gradle/caches
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+    
+    - name: 设置 Python 3.11
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
         
-    - name: Install system dependencies
+    - name: 安装系统依赖
       run: |
         sudo apt-get update
         sudo apt-get install -y git zip unzip openjdk-11-jdk wget
         
-    - name: Accept Android SDK licenses
+    - name: 接受 Android SDK 许可证
       run: |
-        mkdir -p ~/.android/licenses
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/licenses/android-sdk-license
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.android/licenses/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.android/licenses/android-sdk-license
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" >> ~/.android/licenses/android-sdk-license
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        # 自动接受所有Android SDK许可证
+        yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
         
-    - name: Install Buildozer dependencies
+    - name: 安装 Buildozer 依赖
       run: |
         python -m pip install --upgrade pip
         pip install buildozer cython virtualenv
         
-    - name: Initialize Buildozer
+    - name: 检查 Buildozer 配置
       run: |
-        buildozer init
+        if [ -f "buildozer.spec" ]; then
+          echo "✓ buildozer.spec文件已存在"
+          # 验证spec文件格式
+          if python -c "import configparser; configparser.ConfigParser().read('buildozer.spec')" 2>/dev/null; then
+            echo "✓ buildozer.spec文件格式正确"
+          else
+            echo "✗ buildozer.spec文件格式错误，重新初始化"
+            buildozer init
+          fi
+        else
+          echo "✗ buildozer.spec文件不存在，正在初始化"
+          buildozer init
+        fi
         
-    - name: Install Android SDK and Build Tools
+    - name: 安装 Android SDK 和构建工具
       run: |
-        # 手动安装Android SDK和Build Tools
-        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-        mkdir -p $ANDROID_SDK_ROOT
+        # 设置环境变量
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        mkdir -p $ANDROID_HOME
         
-        # 下载并安装Android Command Line Tools
+        # 下载并安装 Android Command Line Tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip -q commandlinetools-linux-9477386_latest.zip -d $ANDROID_SDK_ROOT
+        unzip -q commandlinetools-linux-9477386_latest.zip -d $ANDROID_HOME
         rm commandlinetools-linux-9477386_latest.zip
         
-        # 设置命令行工具路径
-        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/bin
+        # 创建正确的目录结构
+        mkdir -p $ANDROID_HOME/cmdline-tools/latest
+        mv $ANDROID_HOME/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/ 2>/dev/null || true
         
-        # 安装Android SDK和Build Tools
-        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-33"
-        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.0"
-        yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools"
+        # 设置PATH
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
-    - name: Build APK
+        # 安装必要的Android组件
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "build-tools;33.0.0"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools"
+        yes | sdkmanager --sdk_root=$ANDROID_HOME "ndk;25.1.8937393"
+        
+        echo "Android SDK安装完成"
+        
+    - name: 构建 APK
       run: |
-        # 设置环境变量接受所有许可
-        yes | buildozer android clean
+        # 设置环境变量
+        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+        
+        # 清理并构建
+        buildozer android clean
         buildozer -v android debug
         
-    - name: Upload APK artifact
+        # 检查生成的APK文件
+        if [ -f "bin/*.apk" ]; then
+          echo "✓ APK构建成功"
+          ls -la bin/
+        else
+          echo "✗ APK构建失败"
+          exit 1
+        fi
+        
+    - name: 上传 APK 制品
       uses: actions/upload-artifact@v4
       with:
         name: texaspoker-apk
         path: bin/*.apk
         retention-days: 30
         
-    - name: Create Release
+    - name: 创建 GitHub Release
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v1
       with:
         files: bin/*.apk
-        tag_name: v$(date +%s)
-        name: "德州扑克4 APK $(date +'%Y-%m-%d %H:%M')"
+        tag_name: v$(date +%Y%m%d-%H%M%S)
+        name: "德州扑克 APK $(date +'%Y-%m-%d %H:%M:%S')"
         body: |
-          德州扑克4 Android APK自动构建
+          # 德州扑克 Android APK 自动构建
           
-          - 提交: ${{ github.sha }}
-          - 构建时间: $(date)
-          - 版本: 3.0.0
+          **构建信息:**
+          - 🔄 提交: ${{ github.sha }}
+          - ⏰ 构建时间: $(date)
+          - 🏷️ 版本: 自动构建版本
+          - 📱 目标平台: Android 12+ (API 33)
           
-          构建详情: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **下载链接:**
+          - APK文件位于下方的Assets区域
+          
+          **构建详情:** [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
