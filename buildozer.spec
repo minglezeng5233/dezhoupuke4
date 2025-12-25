@@ -21,6 +21,7 @@ android.minapi = 21
 android.ndk = 25b
 
 # SDK和NDK路径配置（避免自动下载）
+# 使用绝对路径确保buildozer能找到正确的工具
 android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
 android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
 android.ant_path = /home/runner/.buildozer/android/platform/apache-ant-1.9.4
