@@ -36,7 +36,7 @@ jobs:
     - name: 安装系统依赖
       run: |
         sudo apt-get update
-        sudo apt-get install -y git zip unzip openjdk-11-jdk wget
+        sudo apt-get install -y git zip unzip openjdk-11-jdk wget ant
         
     - name: 接受 Android SDK 许可证
       run: |
@@ -66,6 +66,23 @@ jobs:
           buildozer init
         fi
         
+    - name: 预先下载构建依赖
+      run: |
+        # 预先下载Apache Ant避免网络问题
+        mkdir -p $HOME/.buildozer/android/platform
+        cd $HOME/.buildozer/android/platform
+        
+        # 使用多个镜像源下载Apache Ant
+        wget -q --timeout=30 https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        wget -q --timeout=30 https://mirrors.tuna.tsinghua.edu.cn/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        wget -q --timeout=30 https://mirrors.aliyun.com/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+        echo "无法下载Apache Ant，将使用系统版本"
+        
+        if [ -f "apache-ant-1.9.4-bin.tar.gz" ]; then
+          tar xzf apache-ant-1.9.4-bin.tar.gz
+          echo "Apache Ant下载完成"
+        fi
+        
     - name: 安装 Android SDK 和构建工具
       run: |
         # 设置环境变量
@@ -74,7 +91,7 @@ jobs:
         mkdir -p $ANDROID_HOME
         
         # 下载并安装 Android Command Line Tools（最新版本）
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        wget -q --timeout=60 https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip -q commandlinetools-linux-11076708_latest.zip -d $ANDROID_HOME
         rm commandlinetools-linux-11076708_latest.zip
         
