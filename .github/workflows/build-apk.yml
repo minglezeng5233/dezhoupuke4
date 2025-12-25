@@ -72,15 +72,33 @@ jobs:
         mkdir -p $HOME/.buildozer/android/platform
         cd $HOME/.buildozer/android/platform
         
-        # 使用多个镜像源下载Apache Ant
-        wget -q --timeout=30 https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
-        wget -q --timeout=30 https://mirrors.tuna.tsinghua.edu.cn/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
-        wget -q --timeout=30 https://mirrors.aliyun.com/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
-        echo "无法下载Apache Ant，将使用系统版本"
+        # 使用系统已安装的Apache Ant
+        if command -v ant >/dev/null 2>&1; then
+          echo "✓ 使用系统Apache Ant: $(ant -version)"
+          # 创建符号链接到buildozer期望的位置
+          mkdir -p apache-ant-1.9.4
+          ln -sf $(which ant) apache-ant-1.9.4/ant
+          ln -sf $(dirname $(which ant)) apache-ant-1.9.4/bin
+        else
+          echo "系统未安装Apache Ant，尝试下载..."
+          # 使用多个镜像源下载Apache Ant
+          wget -q --timeout=30 https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+          wget -q --timeout=30 https://mirrors.tuna.tsinghua.edu.cn/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+          wget -q --timeout=30 https://mirrors.aliyun.com/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+          wget -q --timeout=30 https://mirrors.cloud.tencent.com/apache/ant/binaries/apache-ant-1.9.4-bin.tar.gz || \
+          echo "无法下载Apache Ant，将尝试其他方式"
+          
+          if [ -f "apache-ant-1.9.4-bin.tar.gz" ]; then
+            tar xzf apache-ant-1.9.4-bin.tar.gz
+            echo "Apache Ant下载完成"
+          fi
+        fi
         
-        if [ -f "apache-ant-1.9.4-bin.tar.gz" ]; then
-          tar xzf apache-ant-1.9.4-bin.tar.gz
-          echo "Apache Ant下载完成"
+        # 确保Apache Ant目录存在
+        if [ -d "apache-ant-1.9.4" ]; then
+          echo "✓ Apache Ant已准备就绪"
+        else
+          echo "⚠ Apache Ant未准备就绪，buildozer将尝试下载"
         fi
         
     - name: 安装 Android SDK 和构建工具
