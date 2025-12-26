@@ -1,137 +1,274 @@
 [app]
 
-# 应用标题
-title = 德州扑克3
+# (str) Title of your application
+title = 德州扑克专业版
 
-# 包名（必须唯一）
-package.name = texasholdem3
+# (str) Package name
+package.name = texaspoker.pro
 
-# 域名（反转的包名）
-package.domain = org.poker
+# (str) Package domain (needed for android/ios packaging)
+package.domain = org.texaspoker
 
-# 源代码目录
+# (str) Source code where the main.py live
 source.dir = .
 
-# 主程序文件
-source.main = main.py
+# (list) Source files to include (let empty to include all the files)
+source.include_exts = py,png,jpg,kv,atlas,ttf
 
-# 支持的安卓版本
-android.api = 33
-android.minapi = 21
-android.ndk = 25b
+# (list) List of inclusions using pattern matching
+#source.include_patterns = assets/*,images/*.png
 
-# SDK和NDK路径配置（避免自动下载）
-# 使用系统已安装的Apache Ant
-android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
-android.ant_path = /usr/bin/ant
+# (list) Source files to exclude (let empty to not exclude anything)
+#source.exclude_exts = spec
 
-# 权限要求（简化权限要求）
-android.permissions = INTERNET,VIBRATE
+# (list) List of directory to exclude (let empty to not exclude anything)
+#source.exclude_dirs = tests, bin, venv
 
-# 屏幕方向（竖屏优化）
+# (list) List of exclusions using pattern matching
+#source.exclude_patterns = license,images/*/*.jpg
+
+# (str) Application versioning (method 1)
+version = 1.0
+
+# (str) Application versioning (method 2)
+# version.regex = __version__ = ['"](.*)['"]
+# version.filename = %(source.dir)s/main.py
+
+# (list) Application requirements
+# comma separated e.g. requirements = sqlite3,kivy
+requirements = python3,kivy==2.2.1,pygame,android,hostpython3
+
+# (str) Custom source folders for requirements
+# Sets custom source for any requirements with recipes
+# requirements.source.kivy = ../../kivy
+
+# (list) Garden requirements
+#garden_requirements =
+
+# (str) Presplash of the application
+#presplash.filename = %(source.dir)s/data/presplash.png
+
+# (str) Icon of the application
+#icon.filename = %(source.dir)s/data/icon.png
+
+# (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
 
-# 全屏模式
-fullscreen = 1
+# (list) List of service to declare
+#services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT_TO_PY2
 
-# 包含的模块
-requirements = python3,kivy==2.2.1,openssl,requests,pyjnius
+# (str) OSX, iOS and Android only, start the app in fullscreen
+fullscreen = 0
 
-# 排除不必要的模块以减少包大小
-android.blacklist_src = libgeos,libproj,libxml2,libxslt
+# (bool) enable KivyMD to have Material Design components
+# kivymd = 1
 
-# 优化性能设置
-android.allow_backup = false
-android.launch_mode = singleTop
+# (bool) enable 4x MSAA
+# msaa = 1
 
-# 包含的文件模式
-include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf,json
+#
+# Android specific
+#
 
-# 排除的文件模式
-exclude_exts = .pyc,.pyo,.git,.gitignore,.DS_Store
+# (bool) Indicate if the application should be fullscreen or not
+fullscreen = 0
 
-# 图标文件
-icon.filename = %(source.dir)s/assets/icon.png
+# (string) Presplash background color (for new android toolchain)
+# Supported formats are: #RRGGBB #AARRGGBB or one of the following names:
+# red, blue, green, black, white, gray, cyan, magenta, yellow, lightgray,
+# darkgray, grey, lightgrey, darkgrey, aqua, fuchsia, lime, maroon, navy,
+# olive, purple, silver, teal.
+#android.presplash_color = #FFFFFF
 
-# 启动画面
-presplash.filename = %(source.dir)s/assets/splash.png
+# (list) Permissions
+android.permissions = INTERNET
 
-# 资源文件配置
-source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf,json
-source.include_patterns = assets/*,images/*,data/*
+# (int) Target Android API, should be as high as possible.
+#android.api = 31
 
-# 应用版本
-version = 3.0.0
+# (int) Minimum API your APK / AAB will support.
+#android.minapi = 21
 
-# 版本代码（必须递增）
-version.code = 1
+# (int) Android SDK version to use
+#android.sdk = 23
 
-# 作者信息
-author = Poker Developer
+# (str) Android NDK version to use
+#android.ndk = 23b
 
-# 应用描述
-description = 德州扑克3 - 专业手游版，基于Kivy框架的移动端优化版本
+# (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
+#android.ndk_api = 21
 
-# 日志级别
-log_level = 2
+# (bool) Use --private data storage (True) or --dir public storage (False)
+#android.private_storage = True
 
-# 构建配置
+# (str) Android NDK directory (if empty, it will be automatically downloaded.)
+#android.ndk_path =
+
+# (str) Android SDK directory (if empty, it will be automatically downloaded.)
+#android.sdk_path =
+
+# (str) ANT directory (if empty, it will be automatically downloaded.)
+#android.ant_path =
+
+# (bool) If True, then skip trying to update the Android sdk
+# This can be useful to avoid excess Internet downloads or save time
+# when an update is due and you just want to test/build your package
+# android.skip_update = False
+
+# (bool) If True, then automatically accept SDK license
+# agreements. This is intended for automation only. If set to False,
+# the default, you will be shown the license when first running
+# buildozer.
+# android.accept_sdk_license = False
+
+# (str) Android entry point, default is ok for Kivy-based app
+#android.entrypoint = org.kivy.android.PythonActivity
+
+# (str) Android app theme, default is ok for Kivy-based app
+# android.apptheme = "@android:style/Theme.NoTitleBar"
+
+# (str) Android logcat filters (by default ok for Kivy-based app)
+#android.logcat_filters = *:S python:D
+
+# (bool) Android logcat only display log for activity's pid
+#android.logcat_pid_only = False
+
+# (str) Android additional adb arguments
+#android.adb_args = -H host.docker.internal
+
+# (bool) Copy library instead of making a libpymodules.so
+#android.copy_libs = 1
+
+# (list) Android Activities to include
+#android.activities = com.example.ExampleActivity
+
+# (list) Android java classes to add as activities to the manifest.
+#android.add_activites = 
+
+# (str) OUYA Console category. Should be one of GAME or APP
+# If you leave this blank, OUYA support will not be enabled
+#android.ouya.category = GAME
+
+# (str) Filename of OUYA Console icon. It must be a 732x412 png image.
+#android.ouya.icon.filename = %(source.dir)s/data/ouya_icon.png
+
+# (str) XML file to include as an intent filters in <activity> tag
+#android.manifest.intent_filters = 
+
+# (str) Launch screen to show show at app launch. Usually no need to change.
+#android.launch_screen = 
+
+# (list) Android additional libraries to copy into libs/armeabi-v7a
+#android.add_libs_armeabi_v7a = 
+
+# (list) Android additional libraries to copy into libs/arm64-v8a
+#android.add_libs_arm64_v8a = 
+
+# (list) Android additional libraries to copy into libs/x86
+#android.add_libs_x86 = 
+
+# (list) Android additional libraries to copy into libs/x86_64
+#android.add_libs_x86_64 = 
+
+# (list) Android additional libraries to copy into libs/mips
+#android.add_libs_mips = 
+
+# (list) Android additional libraries to copy into libs/mips64
+#android.add_libs_mips64 = 
+
+# (list) Android additional Java files to add, as a list of pattern
+#android.add_java_files = 
+
+# (list) Android add gradle repositories
+#android.add_gradle_repositories = 
+
+# (list) The Android libraries you want to add (empty by default)
+#android.add_libs = 
+
+# (list) Android additions to aars (empty by default)
+#android.add_aars = 
+
+# (list) Android additions to assets (empty by default)
+#android.add_assets = 
+
+# (list) Android additions to jnilibs (empty by default)
+#android.add_jnilibs = 
+
+# (str) python-for-android branch to use, defaults to stable
+#p4a.branch = stable
+
+# (str) OUYA Console category. Should be one of GAME or APP
+# If you leave this blank, OUYA support will not be enabled
+#android.ouya.category = GAME
+
+# (str) Filename of OUYA Console icon. It must be a 732x412 png image.
+#android.ouya.icon.filename = %(source.dir)s/data/ouya_icon.png
+
+# (str) Android manifest backup you want to use (defaults to current file)
+#android.manifest_backup = 
+
+#
+# iOS specific
+#
+
+# (str) Path to a custom xcodebuild command if using xcodebuild
+#ios.xcodebuild = 
+
+# (str) Name of the certificate to use for signing the debug version
+# Get a list of available identities: buildozer ios list_identities
+#ios.codesign.debug = "iPhone Developer: <lastname> <firstname> (<hexstring>)"
+
+# (str) Name of the certificate to use for signing the release version
+# Get a list of available identities: buildozer ios list_identities
+#ios.codesign.release = %(ios.codesign.debug)s
+
 [buildozer]
 
-# 日志级别
+# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
 log_level = 2
 
-# 工作目录
+# (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
 
-# Android配置
-[app:android]
+# (str) Path to build artifact storage, absolute or relative to spec file
+# build_dir = ./.buildozer
 
-# 包含的架构（支持更多设备）
-android.arch = armeabi-v7a,arm64-v8a
+# (str) Path to build output (i.e. .apk, .aab, .ipa) storage
+# bin_dir = ./bin
 
-# 应用类别
-android.meta_data = 
+#    -----------------------------------------------------------------------------
+#    List as sections
+#
+#    You can define all the "list" as [section:key].
+#    Each line will be considered as a option to the list.
+#    Let's take [app] / source.exclude_patterns.
+#    Instead of doing:
+#
+#[app]
+#source.exclude_patterns = license,data/audio/*.wav,data/images/original/*
+#
+#    This can be translated into:
+#
+#[app:source.exclude_patterns]
+#license
+#data/audio/*.wav
+#data/images/original/*
+#
 
-# 活动主题
-android.theme = @android:style/Theme.NoTitleBar.Fullscreen
-
-# 触摸优化
-android.touchscreen_type = finger
-
-# 屏幕尺寸支持
-android.screen_size = normal,large,xlarge
-
-# 屏幕密度支持
-android.screen_density = mdpi,hdpi,xhdpi,xxhdpi
-
-# 活动配置
-android.entrypoint = org.poker.texasholdem3
-
-# 应用类别（游戏）
-android.app_category = game
-
-# 支持多窗口模式
-android.multiwindow_mode = none
-
-# iOS配置（如果需要）
-[app:ios]
-
-# iOS版本要求
-ios.deployment_target = 11.0
-
-# iOS包标识符
-ios.bundle_identifier = org.poker.texasholdem3
-
-# 其他平台配置
-[app:demo]
-
-# 图形后端
-[app:demo:graphics]
-
-# 窗口设置
-[app:demo:window]
-
-# 输入设置
-[app:demo:input]
+#    -----------------------------------------------------------------------------
+#    Profiles
+#
+#    You can extend section / key with a profile
+#    For example, you want to deploy a demo version of your application without
+#    HD content. You could first change the title to add "(demo)" in the name
+#    and extend the excluded directories to remove the HD content.
+#
+#[app@demo]
+#title = My Application (demo)
+#
+#[app:source.exclude_patterns@demo]
+#images/hd/*
+#
+#    Then, invoke the command line with the "demo" profile:
+#
+#buildozer --profile demo android debug
